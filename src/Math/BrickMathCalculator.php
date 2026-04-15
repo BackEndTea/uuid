@@ -31,11 +31,18 @@ use Ramsey\Uuid\Type\NumberInterface;
  */
 final class BrickMathCalculator implements CalculatorInterface
 {
-    /**
-     * @var array<int, BrickMathRounding::*>|null $roundingModeMap
-     * @phpstan-ignore-next-line
-     */
-    private static ?array $roundingModeMap = null;
+    private const ROUNDING_MODE_MAP = [
+        RoundingMode::UNNECESSARY => BrickMathRounding::Unnecessary,
+        RoundingMode::UP => BrickMathRounding::Up,
+        RoundingMode::DOWN => BrickMathRounding::Down,
+        RoundingMode::CEILING => BrickMathRounding::Ceiling,
+        RoundingMode::FLOOR => BrickMathRounding::Floor,
+        RoundingMode::HALF_UP => BrickMathRounding::HalfUp,
+        RoundingMode::HALF_DOWN => BrickMathRounding::HalfDown,
+        RoundingMode::HALF_CEILING => BrickMathRounding::HalfCeiling,
+        RoundingMode::HALF_FLOOR => BrickMathRounding::HalfFloor,
+        RoundingMode::HALF_EVEN => BrickMathRounding::HalfEven,
+    ];
 
     public function add(NumberInterface $augend, NumberInterface ...$addends): NumberInterface
     {
@@ -85,7 +92,12 @@ final class BrickMathCalculator implements CalculatorInterface
         $quotient = BigDecimal::of($dividend->toString());
 
         foreach ($divisors as $divisor) {
-            $quotient = $quotient->dividedBy($divisor->toString(), $scale, $brickRounding);
+            $quotient = $quotient->dividedBy(
+                $divisor->toString(),
+                /** @phpstan-ignore argument.type */
+                $scale,
+                $brickRounding
+            );
         }
 
         if ($scale === 0) {
@@ -101,7 +113,12 @@ final class BrickMathCalculator implements CalculatorInterface
     {
         try {
             /** @phpstan-ignore possiblyImpure.new */
-            return new IntegerObject((string) BigInteger::fromBase($value, $base));
+            return new IntegerObject((string) BigInteger::fromBase(
+                /** @phpstan-ignore argument.type */
+                $value,
+                /** @phpstan-ignore argument.type */
+                $base
+            ));
         } catch (MathException | \InvalidArgumentException $exception) {
             throw new InvalidArgumentException(
                 /** @phpstan-ignore possiblyImpure.methodCall */
@@ -116,7 +133,9 @@ final class BrickMathCalculator implements CalculatorInterface
     public function toBase(IntegerObject $value, int $base): string
     {
         try {
-            return BigInteger::of($value->toString())->toBase($base);
+            return BigInteger::of($value->toString())
+                /** @phpstan-ignore argument.type */
+                ->toBase($base);
         } catch (MathException | \InvalidArgumentException $exception) {
             throw new InvalidArgumentException(
                 /** @phpstan-ignore possiblyImpure.methodCall */
@@ -142,50 +161,10 @@ final class BrickMathCalculator implements CalculatorInterface
     /**
      * Maps ramsey/uuid rounding modes to those used by brick/math
      *
-     * @return BrickMathRounding::*
+     * @return BrickMathRounding
      */
     private function getBrickRoundingMode(int $roundingMode)
     {
-        return self::getRoundingMap()[$roundingMode] ?? self::getRoundingMap()[0];
-    }
-
-    /**
-     * @return array<int, BrickMathRounding::*>
-     */
-    private static function getRoundingMap(): array
-    {
-        if (self::$roundingModeMap === null) {
-            if (defined(BrickMathRounding::class . '::UNNECESSARY')) {
-                /** @phpstan-ignore-next-line */
-                self::$roundingModeMap = [
-                    RoundingMode::UNNECESSARY => BrickMathRounding::UNNECESSARY,
-                    RoundingMode::UP => BrickMathRounding::UP,
-                    RoundingMode::DOWN => BrickMathRounding::DOWN,
-                    RoundingMode::CEILING => BrickMathRounding::CEILING,
-                    RoundingMode::FLOOR => BrickMathRounding::FLOOR,
-                    RoundingMode::HALF_UP => BrickMathRounding::HALF_UP,
-                    RoundingMode::HALF_DOWN => BrickMathRounding::HALF_DOWN,
-                    RoundingMode::HALF_CEILING => BrickMathRounding::HALF_CEILING,
-                    RoundingMode::HALF_FLOOR => BrickMathRounding::HALF_FLOOR,
-                    RoundingMode::HALF_EVEN => BrickMathRounding::HALF_EVEN,
-                ];
-            } else {
-                self::$roundingModeMap = [
-                    RoundingMode::UNNECESSARY => BrickMathRounding::Unnecessary,
-                    RoundingMode::UP => BrickMathRounding::Up,
-                    RoundingMode::DOWN => BrickMathRounding::Down,
-                    RoundingMode::CEILING => BrickMathRounding::Ceiling,
-                    RoundingMode::FLOOR => BrickMathRounding::Floor,
-                    RoundingMode::HALF_UP => BrickMathRounding::HalfUp,
-                    RoundingMode::HALF_DOWN => BrickMathRounding::HalfDown,
-                    RoundingMode::HALF_CEILING => BrickMathRounding::HalfCeiling,
-                    RoundingMode::HALF_FLOOR => BrickMathRounding::HalfFloor,
-                    RoundingMode::HALF_EVEN => BrickMathRounding::HalfEven,
-                ];
-            }
-        }
-
-        /** @phpstan-ignore-next-line */
-        return self::$roundingModeMap;
+        return self::ROUNDING_MODE_MAP[$roundingMode] ?? BrickMathRounding::Unnecessary;
     }
 }
