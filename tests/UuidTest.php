@@ -1213,19 +1213,9 @@ class UuidTest extends TestCase
                         . "; 32-bit: {$uuid32->toString()}, 64-bit: {$uuid64->toString()}"
                 );
 
-                if (defined(RoundingMode::class . '::HALF_UP')) {
-                    $halfUp = RoundingMode::HALF_UP;
-                    $down = RoundingMode::DOWN;
-                } else {
-                    $halfUp = RoundingMode::HalfUp;
-                    $down = RoundingMode::Down;
-                }
-
                 // Assert that the time matches
-                // @phpstan-ignore-next-line
-                $usecAdd = BigDecimal::of($usec)->dividedBy('1000000', 14, $halfUp);
-                // @phpstan-ignore-next-line
-                $testTime = BigDecimal::of($currentTime)->plus($usecAdd)->toScale(0, $down);
+                $usecAdd = BigDecimal::of($usec)->dividedBy('1000000', 14, RoundingMode::HalfUp);
+                $testTime = BigDecimal::of($currentTime)->plus($usecAdd)->toScale(0, RoundingMode::Down);
                 $this->assertSame((string) $testTime, (string) $uuid64->getDateTime()->getTimestamp());
                 $this->assertSame((string) $testTime, (string) $uuid32->getDateTime()->getTimestamp());
             }
